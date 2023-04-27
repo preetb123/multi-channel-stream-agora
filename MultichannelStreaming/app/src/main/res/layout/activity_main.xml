@@ -10,27 +10,34 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <FrameLayout
-            android:id="@+id/local_video_view_container"
-            android:layout_width="320dp"
-            android:layout_height="240dp"
-            android:layout_centerHorizontal="true"
-            android:layout_margin="6dp"
-            android:background="@android:color/darker_gray" />
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/video_containers"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:weightSum="2">
 
-        <FrameLayout
-            android:id="@+id/remote_video_view_container"
-            android:layout_width="320dp"
-            android:layout_height="240dp"
-            android:layout_below="@+id/local_video_view_container"
-            android:layout_centerHorizontal="true"
-            android:layout_margin="6dp"
-            android:background="@android:color/darker_gray" />
+            <FrameLayout
+                android:id="@+id/local_video_view_container"
+                android:layout_width="0dp"
+                android:layout_height="200dp"
+                android:layout_margin="6dp"
+                android:layout_weight="1"
+                android:background="@android:color/darker_gray" />
+
+            <FrameLayout
+                android:id="@+id/remote_video_view_container"
+                android:layout_width="0dp"
+                android:layout_height="200dp"
+                android:layout_margin="6dp"
+                android:layout_weight="1"
+                android:background="@android:color/darker_gray" />
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
         <LinearLayout
             android:id="@+id/switchRow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/remote_video_view_container"
+            android:layout_below="@+id/video_containers"
             android:layout_centerHorizontal="true">
 
             <Switch
@@ -39,7 +46,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:checked="true"
-                android:text="Audience" />
+                android:text="Host"
+                android:textColor="@color/teal_200"/>
 
             <TextView
                 android:id="@+id/textView"
@@ -47,14 +55,15 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:text="Audience"
-                android:textColor="@color/black" />
+                android:textColor="@color/teal_200" />
         </LinearLayout>
+
         <Button
             android:id="@+id/JoinButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/remote_video_view_container"
-            android:layout_alignStart="@id/remote_video_view_container"
+            android:layout_below="@+id/switchRow"
+            android:layout_alignStart="@id/video_containers"
             android:layout_marginTop="40dp"
             android:onClick="joinChannel"
             android:text="Join" />
@@ -63,10 +72,28 @@
             android:id="@+id/LeaveButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/remote_video_view_container"
-            android:layout_alignEnd="@id/remote_video_view_container"
+            android:layout_below="@+id/switchRow"
+            android:layout_alignEnd="@id/video_containers"
             android:layout_marginTop="40dp"
             android:onClick="leaveChannel"
             android:text="Leave" />
+        <Button
+            android:id="@+id/secondChannelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/LeaveButton"
+            android:layout_alignEnd="@id/LeaveButton"
+            android:layout_alignStart="@id/JoinButton"
+            android:onClick="joinSecondChannel"
+            android:text="Join second channel" />
+
+        <TextView
+            android:id="@+id/group_info"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_below="@id/secondChannelButton"
+            android:orientation="vertical">
+
+        </TextView>
     </RelativeLayout>
 </ScrollView>
