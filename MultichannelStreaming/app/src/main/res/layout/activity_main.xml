@@ -79,6 +79,15 @@
             android:layout_marginTop="18dp"
             android:onClick="joinChannel"
             android:text="Join" />
+        <Button
+            android:id="@+id/sendmessagetopeer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/switchRow"
+            android:text="Send Message"
+            android:layout_marginTop="18dp"
+            android:layout_marginLeft="120dp"
+            />
 
         <Button
             android:id="@+id/LeaveButton"
@@ -90,6 +99,7 @@
             android:onClick="leaveChannel"
             android:text="Leave" />
 
+
         <Button
             android:id="@+id/secondChannelButton"
             android:layout_width="wrap_content"
@@ -99,12 +109,7 @@
             android:layout_alignStart="@id/JoinButton"
             android:onClick="joinSecondChannel"
             android:text="Join second channel" />
-        <Button
-            android:id="@+id/sendmessagetopeer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Send Message"
-            />
+
 
         <TextView
             android:id="@+id/group_info"

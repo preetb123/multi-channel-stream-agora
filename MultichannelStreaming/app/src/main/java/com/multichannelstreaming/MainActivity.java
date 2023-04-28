@@ -140,8 +140,27 @@ public class MainActivity extends AppCompatActivity {
             tvName.setText(user.name);
             checkHost.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
-                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    Log.d(TAG, "checkHost onCheckedChanged() called with: compoundButton = [" + compoundButton + "], b = [" + b + "]");
+                public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                    Log.d(TAG, "checkHost onCheckedChanged() called with: compoundButton = [" + compoundButton + "], b = [" + isChecked + "]");
+                    final RtmMessage message = mRtmClient.createMessage();
+                    message.setText(isChecked ? "host" : "audience");
+
+                    mRtmChannel.sendMessage(message, new ResultCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, "Requested for role change", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(ErrorInfo errorInfo) {
+                            Log.d(TAG, "onFailure() called with: errorInfo = [" + errorInfo + "]");
+                        }
+                    });
                 }
             });
 
@@ -172,6 +191,24 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onFailure(ErrorInfo errorInfo) {
                             Log.d(TAG, "onFailure() called with: errorInfo = [" + errorInfo + "]");
+                        }
+                    });
+
+                    mRtmChannel.getMembers(new ResultCallback<List<RtmChannelMember>>() {
+                        @Override
+                        public void onSuccess(List<RtmChannelMember> rtmChannelMembers) {
+                            Log.d(TAG, "rtmChannel getMembers onSuccess() called with: rtmChannelMembers = [" + rtmChannelMembers.size() + "]");
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, "Total channel members: " + rtmChannelMembers.size(), Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(ErrorInfo errorInfo) {
+                            Log.d(TAG, "rtmChannel getMembers onFailure() called with: errorInfo = [" + errorInfo + "]");
                         }
                     });
                 }
@@ -670,15 +707,24 @@ public class MainActivity extends AppCompatActivity {
                     public void onMessageReceived(RtmMessage rtmMessage, RtmChannelMember rtmChannelMember) {
                         Log.d(TAG, "onMessageReceived() called with: rtmMessage = [" + rtmMessage + "], rtmChannelMember = [" + rtmChannelMember + "]");
                         String text = rtmMessage.getText();
-                        String fromUser = rtmChannelMember.getUserId();
 
-                        String message_text = "Message received from " + fromUser + " : " + text + "\n";
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(MainActivity.this, message_text, Toast.LENGTH_SHORT).show();
+                        if(text.equals("host") || text.equals("audience")){
+                            if(text.equals("host")) {
+                                agoraEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER);
+                            }else{
+                                agoraEngine.setClientRole(Constants.CLIENT_ROLE_AUDIENCE);
                             }
-                        });
+                        }else {
+                            String fromUser = rtmChannelMember.getUserId();
+
+                            String message_text = "Message received from " + fromUser + " : " + text + "\n";
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, message_text, Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
                     }
 
                     @Override
