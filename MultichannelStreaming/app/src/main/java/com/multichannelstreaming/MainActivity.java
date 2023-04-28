@@ -2,15 +2,27 @@ package com.multichannelstreaming;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.Switch;
@@ -23,11 +35,26 @@ import io.agora.rtc2.ChannelMediaOptions;
 
 import io.agora.rtc2.RtcConnection;
 import io.agora.rtc2.RtcEngineEx;
+import io.agora.rtm.ErrorInfo;
+import io.agora.rtm.ResultCallback;
+import io.agora.rtm.RtmChannel;
+import io.agora.rtm.RtmChannelAttribute;
+import io.agora.rtm.RtmChannelListener;
+import io.agora.rtm.RtmChannelMember;
+import io.agora.rtm.RtmClient;
+import io.agora.rtm.RtmClientListener;
+import io.agora.rtm.RtmFileMessage;
+import io.agora.rtm.RtmImageMessage;
+import io.agora.rtm.RtmMediaOperationProgress;
+import io.agora.rtm.RtmMessage;
+import io.agora.rtm.SendMessageOptions;
 
 import android.widget.Button;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -38,9 +65,9 @@ public class MainActivity extends AppCompatActivity {
     // Fill the channel name.
     private String channelName = "channel1";
     // Fill the temp token generated on Agora Console.
-    private String token = "007eJxTYFiscpajrudtqkaJi8kKu507jpyeMSnLxGc9R7LbsqBLn90VGCyTLIwSTRLNDS1TjUzSUo0sDNJSzUyN0lINzNKM0sySZJZ4pjQEMjK8/7uQgREIWYAYxGcCk8xgkgVMcjAkZyTm5aXmGDIwAAAktyPc";
+    private String token = "007eJxTYFgycwqrw79tgVv7/z8/oHeHOzdRaYand/UdR4OUf/M823sUGCyTLIwSTRLNDS1TjUzSUo0sDNJSzUyN0lINzNKM0sySrjh7pzQEMjJ0vORgYmRgZGABYhCfCUwyg0kWMMnBkJyRmJeXmmPIwAAAeEgkEw==";
     // An integer that identifies the local user.
-    private int uid = 12345;
+    private int currentUid;
     private boolean isJoined = false;
 
     private RtcEngineEx agoraEngine;
@@ -55,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
     private Button secondChannelButton;
     private RtcConnection rtcSecondConnection;
     private String secondChannelName = "channel2";
-    private int secondChannelUid = uid; // Uid for the second channel
-    private String secondChannelToken = "007eJxTYDgWu7a2akXxVI5rmX75F5Q/Bmk/4958hKHcYmG+1GeXpO8KDJZJFkaJJonmhpapRiZpqUYWBmmpZqZGaakGZmlGaWZJ89d4pjQEMjKY8sxjZmRgZGABYhCfCUwyg0kWMMnBkJyRmJeXmmPEwAAAGv4jAA==";
+    private int secondChannelUid;
+    private String secondChannelToken = "007eJxTYLj+2Y85plbYfPIsN4UzljGMbBM6Ejaw/W473efucvppuo8Cg2WShVGiSaK5oWWqkUlaqpGFQVqqmalRWqqBWZpRmlmSiYt3SkMgI8Pe//aMjAyMDCxADOIzgUlmMMkCJjkYkjMS8/JSc4wYGAB29CHL";
     private boolean isSecondChannelJoined = false; // Track connection state of the second channel
 
 
@@ -66,7 +93,100 @@ public class MainActivity extends AppCompatActivity {
                     Manifest.permission.RECORD_AUDIO,
                     Manifest.permission.CAMERA
     };
+    private ListView usersListView;
+    private static final String TAG = "MainActivity";
+    private UsersAdapter adapter;
 
+    private RtmClient mRtmClient;
+    // <Vg k="MESS" /> channel instance
+    private RtmChannel mRtmChannel;
+    private String rtmTokenString;
+
+
+    static class User {
+        public String name;
+        public boolean isHost;
+        public boolean isMuted;
+
+        public User(String name, boolean isHost, boolean isMuted){
+            this.name = name;
+            this.isHost = isHost;
+            this.isMuted = isMuted;
+        }
+    }
+
+    public class UsersAdapter extends ArrayAdapter<User> {
+
+        private ArrayList<User> users;
+
+        public UsersAdapter(Context context, ArrayList<User> users) {
+            super(context, 0, users);
+            this.users = users;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            // Get the data item for this position
+            User user = users.get(position);
+            // Check if an existing view is being reused, otherwise inflate the view
+            if (convertView == null) {
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.user_layout, parent, false);
+            }
+            // Lookup view for data population
+            TextView tvName = (TextView) convertView.findViewById(R.id.username);
+            CheckBox checkHost = (CheckBox) convertView.findViewById(R.id.makehost);
+            CheckBox muteUnmute = (CheckBox) convertView.findViewById(R.id.muteunmute);
+            Button greet = (Button) convertView.findViewById(R.id.greetwithhello);
+            tvName.setText(user.name);
+            checkHost.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    Log.d(TAG, "checkHost onCheckedChanged() called with: compoundButton = [" + compoundButton + "], b = [" + b + "]");
+                }
+            });
+
+            muteUnmute.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    Log.d(TAG, "muteUnmute onCheckedChanged() called with: compoundButton = [" + compoundButton + "], b = [" + b + "]");
+                }
+            });
+
+            greet.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Log.d(TAG, "greet onClick() called with: view = [" + view + "]");
+
+                    final RtmMessage message = mRtmClient.createMessage();
+                    message.setText("Hello from " + currentUid);
+
+                    SendMessageOptions option = new SendMessageOptions();
+                    option.enableOfflineMessaging = true;
+                    mRtmChannel.sendMessage(message, new ResultCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            Log.d(TAG, "onSuccess() called with: unused = [" + unused + "]");
+                            Toast.makeText(MainActivity.this, "Message Sent Successfully", Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onFailure(ErrorInfo errorInfo) {
+                            Log.d(TAG, "onFailure() called with: errorInfo = [" + errorInfo + "]");
+                        }
+                    });
+                }
+            });
+            // Return the completed view to render on screen
+            return convertView;
+        }
+
+
+        public void addUsers(ArrayList<User> newUsers) {
+            users.clear();
+            users.addAll(newUsers);
+            notifyDataSetChanged();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +203,150 @@ public class MainActivity extends AppCompatActivity {
         secondChannelButton = findViewById(R.id.secondChannelButton);
         secondChannelButton.setEnabled(false);
 
+        ArrayList<User> arrayOfUsers = new ArrayList<User>();
+        // Create the adapter to convert the array to views
+        adapter = new UsersAdapter(this, arrayOfUsers);
+
+        usersListView = (ListView) findViewById(R.id.list);
+
+        Button sendMessageToPeerButton = (Button) findViewById(R.id.sendmessagetopeer);
+        sendMessageToPeerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                final EditText taskEditText = new EditText(MainActivity.this);
+                AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Enter the peer UID")
+                        .setView(taskEditText)
+                        .setPositiveButton("Send", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                String peerId = taskEditText.getText().toString();
+
+                                final RtmMessage message = mRtmClient.createMessage();
+                                message.setText("Hello from " + currentUid);
+
+                                SendMessageOptions option = new SendMessageOptions();
+                                option.enableOfflineMessaging = true;
+                                mRtmClient.sendMessageToPeer(peerId, message, option, new ResultCallback<Void>() {
+                                    @Override
+                                    public void onSuccess(Void unused) {
+                                        Log.d(TAG, "sendMessageToPeer onSuccess() called with: unused = [" + unused + "]");
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                Toast.makeText(MainActivity.this, "Message Sent Successfully", Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onFailure(ErrorInfo errorInfo) {
+                                        Log.d(TAG, "sendMessageToPeer onFailure() called with: errorInfo = [" + errorInfo + "]");
+                                    }
+                                });
+                            }
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .create();
+                dialog.show();
+            }
+        });
+
+        usersListView.setAdapter(adapter);
+
+        initialiseRTMClient();
+
+        final EditText taskEditText = new EditText(this);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Enter UID")
+                .setView(taskEditText)
+                .setPositiveButton("Add", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        currentUid = Integer.parseInt(taskEditText.getText().toString());
+
+                        secondChannelUid = currentUid;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                TextView currentUserId = (TextView)findViewById(R.id.currentUserID);
+                                currentUserId.setText("CurrentUser : " + String.valueOf(currentUid));
+                            }
+                        });
+                        if(currentUid == 11111){
+                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIABSiUQAxX7T1CD8A5gDDIJ1QIpAQAWylMHYQbkEj3Qu8cBx3qAAAAAAEAAJAd5cmYtMZAEA6AOZi0xk";
+                        }else if(currentUid == 22222){
+                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIAC3U0nSW6mKQL8zJhBmDKn4B2XGV0M5tllOURFMomXG5t4YqUUAAAAAEAAJAd5cE4pMZAEA6AMTikxk";
+                        }else if(currentUid == 33333){
+                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIAAQfqISjvhszoWFJrRPThCJFXdFLuzuG+Z7bJ78ml2zZes9q68AAAAAEAAJAd5cIYpMZAEA6AMhikxk";
+                        }else if(currentUid == 44444){
+                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIABVc4MrH77zwQ4g7jBvQYZgBBtsTzzBla/nShzyMDub86PMNlQAAAAAEAAJAd5cNIpMZAEA6AM0ikxk";
+                        }
+
+                        loginToRTMClient();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.show();
+    }
+
+    private void initialiseRTMClient() {
+        // Initialize the <Vg k="MESS" /> client
+        try {
+            // Initialize the <Vg k="MESS" /> client
+            mRtmClient = RtmClient.createInstance(getBaseContext(), appId,
+                    new RtmClientListener() {
+                        @Override
+                        public void onConnectionStateChanged(int state, int reason) {
+                            String text = "Connection state changed to " + state + "Reason: " + reason + "\n";
+                            //writeToMessageHistory(text);
+                            Log.d(TAG, "onConnectionStateChanged() called with: state = [" + state + "], reason = [" + reason + "]");
+                        }
+
+                        @Override
+                        public void onTokenExpired() {
+                        }
+
+                        @Override
+                        public void onPeersOnlineStatusChanged(Map<String, Integer> map) {
+                            Log.d(TAG, "onPeersOnlineStatusChanged() called with: map = [" + map + "]");
+                        }
+
+                        @Override
+                        public void onMessageReceived(RtmMessage rtmMessage, String peerId) {
+                            String text = "Message received from " + peerId + " Message: " + rtmMessage.getText() + "\n";
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(MainActivity.this, text, Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onImageMessageReceivedFromPeer(RtmImageMessage rtmImageMessage, String s) {
+
+                        }
+
+                        @Override
+                        public void onFileMessageReceivedFromPeer(RtmFileMessage rtmFileMessage, String s) {
+
+                        }
+
+                        @Override
+                        public void onMediaUploadingProgress(RtmMediaOperationProgress rtmMediaOperationProgress, long l) {
+
+                        }
+
+                        @Override
+                        public void onMediaDownloadingProgress(RtmMediaOperationProgress rtmMediaOperationProgress, long l) {
+
+                        }
+                    });
+        } catch (Exception e) {
+            throw new RuntimeException("<Vg /> initialization failed!");
+        }
     }
 
     private void setupVideoSDKEngine() {
@@ -105,11 +369,27 @@ public class MainActivity extends AppCompatActivity {
         agoraEngine.stopPreview();
         agoraEngine.leaveChannel();
 
+        logoutFromRTMClient();
+
         // Destroy the engine in a sub-thread to avoid congestion
         new Thread(() -> {
             RtcEngine.destroy();
             agoraEngine = null;
         }).start();
+    }
+
+    private void logoutFromRTMClient() {
+        mRtmClient.logout(new ResultCallback<Void>() {
+            @Override
+            public void onSuccess(Void unused) {
+                Log.d(TAG, "logout from RTM onSuccess() called with: unused = [" + unused + "]");
+            }
+
+            @Override
+            public void onFailure(ErrorInfo errorInfo) {
+                Log.d(TAG, "logout from RTM onFailure() called with: errorInfo = [" + errorInfo + "]");
+            }
+        });
     }
 
     public void joinSecondChannel(View view) {
@@ -160,6 +440,12 @@ public class MainActivity extends AppCompatActivity {
 
         TextView groupInfo = (TextView) findViewById(R.id.group_info);
         groupInfo.setText(sb.toString() + "\n" + sb2.toString());
+
+        ArrayList<User> users = new ArrayList<>();
+        for(Integer s: channel1Users){
+            users.add(new User(String.valueOf(s), false, false));
+        }
+        adapter.addUsers(users);
     }
 
     // Callbacks for the second channel
@@ -234,6 +520,17 @@ public class MainActivity extends AppCompatActivity {
             showMessage("Join a channel first");
         } else {
             agoraEngine.leaveChannel();
+            mRtmChannel.leave(new ResultCallback<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    Log.d(TAG, "channel1 left successfully onSuccess() called with: unused = [" + unused + "]");
+                }
+
+                @Override
+                public void onFailure(ErrorInfo errorInfo) {
+                    Log.d(TAG, "error leaving channel1 onFailure() called with: errorInfo = [" + errorInfo + "]");
+                }
+            });
             showMessage("You left the channel");
             // Stop remote video rendering.
             if (remoteSurfaceView != null) remoteSurfaceView.setVisibility(View.GONE);
@@ -356,10 +653,90 @@ public class MainActivity extends AppCompatActivity {
             audienceRole.setEnabled(false); // Disable the switch
             // Join the channel with a temp token.
             // You need to specify the user ID yourself, and ensure that it is unique in the channel.
-            agoraEngine.joinChannel(token, channelName, uid, options);
+            int res = agoraEngine.joinChannel(token, channelName, currentUid, options);
+            if (res == 0) {
+                mRtmChannel = mRtmClient.createChannel(channelName, new RtmChannelListener() {
+                    @Override
+                    public void onMemberCountUpdated(int i) {
+                        Log.d(TAG, "onMemberCountUpdated() called with: i = [" + i + "]");
+                    }
+
+                    @Override
+                    public void onAttributesUpdated(List<RtmChannelAttribute> list) {
+                        Log.d(TAG, "onAttributesUpdated() called with: list = [" + list + "]");
+                    }
+
+                    @Override
+                    public void onMessageReceived(RtmMessage rtmMessage, RtmChannelMember rtmChannelMember) {
+                        Log.d(TAG, "onMessageReceived() called with: rtmMessage = [" + rtmMessage + "], rtmChannelMember = [" + rtmChannelMember + "]");
+                        String text = rtmMessage.getText();
+                        String fromUser = rtmChannelMember.getUserId();
+
+                        String message_text = "Message received from " + fromUser + " : " + text + "\n";
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this, message_text, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onImageMessageReceived(RtmImageMessage rtmImageMessage, RtmChannelMember rtmChannelMember) {
+                        Log.d(TAG, "onImageMessageReceived() called with: rtmImageMessage = [" + rtmImageMessage + "], rtmChannelMember = [" + rtmChannelMember + "]");
+                    }
+
+                    @Override
+                    public void onFileMessageReceived(RtmFileMessage rtmFileMessage, RtmChannelMember rtmChannelMember) {
+                        Log.d(TAG, "onFileMessageReceived() called with: rtmFileMessage = [" + rtmFileMessage + "], rtmChannelMember = [" + rtmChannelMember + "]");
+                    }
+
+                    @Override
+                    public void onMemberJoined(RtmChannelMember rtmChannelMember) {
+                        Log.d(TAG, "onMemberJoined() called with: rtmChannelMember = [" + rtmChannelMember + "]");
+                    }
+
+                    @Override
+                    public void onMemberLeft(RtmChannelMember rtmChannelMember) {
+                        Log.d(TAG, "onMemberLeft() called with: rtmChannelMember = [" + rtmChannelMember + "]");
+                    }
+                });
+
+                mRtmChannel.join(new ResultCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        Log.d(TAG, "RMTChannel join onSuccess() called with: unused = [" + unused + "]");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onFailure(ErrorInfo errorInfo) {
+                        Log.d(TAG, "RMTChannel join onFailure() called with: errorInfo = [" + errorInfo + "]");
+                    }
+                });
+            }
         } else {
             Toast.makeText(getApplicationContext(), "Permissions was not granted", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void loginToRTMClient() {
+        mRtmClient.login(rtmTokenString, String.valueOf(currentUid), new ResultCallback<Void>() {
+            @Override
+            public void onSuccess(Void unused) {
+                Log.d(TAG, "RTM Login onSuccess() called with: unused = [" + unused + "]");
+            }
+
+            @Override
+            public void onFailure(ErrorInfo errorInfo) {
+                Log.d(TAG, "RTM Login onFailure() called with: errorInfo = [" + errorInfo + "]");
+            }
+        });
     }
 
     private void setupRemoteVideo(int uid, FrameLayout container) {

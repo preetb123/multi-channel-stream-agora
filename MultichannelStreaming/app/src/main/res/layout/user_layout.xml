@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/username"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Username"
+        android:paddingRight="16dp"/>
+
+    <CheckBox
+        android:id="@+id/muteunmute"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mute" />
+
+    <CheckBox
+        android:id="@+id/makehost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Host" />
+
+    <Button
+        android:id="@+id/greetwithhello"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="👋"
+        android:background="@android:color/transparent"
+        />
+</LinearLayout>
