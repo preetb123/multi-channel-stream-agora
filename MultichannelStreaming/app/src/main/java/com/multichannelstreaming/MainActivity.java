@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
     // Fill the channel name.
     private String channelName = "channel1";
     // Fill the temp token generated on Agora Console.
-    private String token = "007eJxTYFgycwqrw79tgVv7/z8/oHeHOzdRaYand/UdR4OUf/M823sUGCyTLIwSTRLNDS1TjUzSUo0sDNJSzUyN0lINzNKM0sySrjh7pzQEMjJ0vORgYmRgZGABYhCfCUwyg0kWMMnBkJyRmJeXmmPIwAAAeEgkEw==";
+    private String token = "007eJxTYPhzX3tusVZ+GN/atd8jl5mfUj5pGnP82K9J00O3GU7Y8qdRgcEyycIo0STR3NAy1cgkLdXIwiAt1czUKC3VwCzNKM0sKaI/IKUhkJHhvq0QCyMDIwMLEIP4TGCSGUyygEkOhuSMxLy81BxDBgYAzN8k0w==";
     // An integer that identifies the local user.
     private int currentUid;
     private boolean isJoined = false;
@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private RtcConnection rtcSecondConnection;
     private String secondChannelName = "channel2";
     private int secondChannelUid;
-    private String secondChannelToken = "007eJxTYLj+2Y85plbYfPIsN4UzljGMbBM6Ejaw/W473efucvppuo8Cg2WShVGiSaK5oWWqkUlaqpGFQVqqmalRWqqBWZpRmlmSiYt3SkMgI8Pe//aMjAyMDCxADOIzgUlmMMkCJjkYkjMS8/JSc4wYGAB29CHL";
+    private String secondChannelToken = "007eJxTYAjMuPn84I2r09dOrRFo7hV1+yiRGubRxLH0lvfsHkmL5NUKDJZJFkaJJonmhpapRiZpqUYWBmmpZqZGaakGZmlGaWZJLf0BKQ2BjAxKF64yMTIwMrAAMYjPBCaZwSQLmORgSM5IzMtLzTFiYAAARpojpg==";
     private boolean isSecondChannelJoined = false; // Track connection state of the second channel
 
 
@@ -311,13 +311,13 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                         if(currentUid == 11111){
-                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIABSiUQAxX7T1CD8A5gDDIJ1QIpAQAWylMHYQbkEj3Qu8cBx3qAAAAAAEAAJAd5cmYtMZAEA6AOZi0xk";
+                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIAC2vq4LhdeS/72mPNIoIuZ0zGBJs78a5uG5hqshrVeUvMBx3qAAAAAAEAAJAd5cHOFRZAEA6AMc4VFk";
                         }else if(currentUid == 22222){
-                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIAC3U0nSW6mKQL8zJhBmDKn4B2XGV0M5tllOURFMomXG5t4YqUUAAAAAEAAJAd5cE4pMZAEA6AMTikxk";
+                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIAASHBj4hXQfz8s+3vlqAm5aevv7d/uaAgSf2N+uIMFdf94YqUUAAAAAEAAJAd5cKeFRZAEA6AMp4VFk";
                         }else if(currentUid == 33333){
-                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIAAQfqISjvhszoWFJrRPThCJFXdFLuzuG+Z7bJ78ml2zZes9q68AAAAAEAAJAd5cIYpMZAEA6AMhikxk";
+                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIAArEbVZVPEuSMnIbApV4HXsbBwEcpiGY2kcdUu7cLQUK+s9q68AAAAAEAAJAd5cPOFRZAEA6AM84VFk";
                         }else if(currentUid == 44444){
-                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIABVc4MrH77zwQ4g7jBvQYZgBBtsTzzBla/nShzyMDub86PMNlQAAAAAEAAJAd5cNIpMZAEA6AM0ikxk";
+                            rtmTokenString = "0069b82a4a719e24fe280fe652fe06f2f6bIABnZaOVV3Z60bGq/W5hCVn/wAmjxnlxY1CfIDSj9M6/K6PMNlQAAAAAEAAJAd5cSeFRZAEA6ANJ4VFk";
                         }
 
                         loginToRTMClient();
